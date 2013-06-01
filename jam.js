@@ -48,8 +48,9 @@ WaveformView = Backbone.View.extend({
       for (var x = 0; x < columns.length; x++) {
         var levels = columns[x],
             colTop = center - levels[0] * colScale,
-            colBottom = center + Math.abs(levels[1]) * colScale
-        canvas.fillRect(x, colTop, 1, colBottom - colTop)
+            colBottom = center + Math.abs(levels[1]) * colScale,
+            colHeight = colBottom - colTop
+        canvas.fillRect(x, colTop, 1, colHeight)
       }
       canvas.fillStyle = centerColor
       canvas.fillRect(0, center, width, 1)
