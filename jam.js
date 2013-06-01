@@ -573,22 +573,6 @@ function combinePatterns(patterns) {
   }
 }
 
-looper = function(t) {
-  if (!looper.last) {
-    looper.last = t
-  }
-  var next = looper.last + 1
-  looper.last = next
-  return [{
-    t: next - .2,
-    run: function() {
-      var v = new window['sin']({freq: 440})
-      connect(v.out, ctx.destination)
-      v.play(next, 1)
-    }
-  }]
-}
-
 scheduler = {
   running: {},
 
