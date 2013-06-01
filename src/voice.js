@@ -6,7 +6,6 @@ Voice = function(options) {
 _.extend(Voice.prototype, {
   options: {},
   initialize: function() {},
-  note: function() {},
   play: function(time, length) {
     try {
       this.start(time)
