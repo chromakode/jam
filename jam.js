@@ -189,6 +189,7 @@ VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
   events: {
     'click .test': 'test'
   },
+
   render: function() {
     HUDView.prototype.render.call(this)
     $('<button>')
@@ -200,6 +201,7 @@ VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
       .appendTo(this.el)
     return this
   },
+
   test: function() {
     var v = new window[this.options.name]({freq: 440})
     connect(v.out, ctx.destination)
