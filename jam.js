@@ -665,16 +665,6 @@ $(function() {
   editorView = new EditorView({el: $('#editor')})
   editorView.render()
   editorView.loadCode('demo.js')
-
-  go = function() {
-    l = playLoop('run')
-    connect(l.out, ctx.destination)
-    l.start()
-  }
-  stop = function() {
-    l.stop()
-  }
-
   $(window)
     .bind('dragenter dragover drop', function(ev) {
       ev.stopPropagation()
