@@ -187,7 +187,8 @@ HUDView = Backbone.View.extend({
 VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
   className: 'hud hud-voice',
   events: {
-    'click .test': 'test'
+    'click .test': 'test',
+    'click .loop': 'loop'
   },
 
   render: function() {
@@ -198,14 +199,37 @@ VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
       .appendTo(this.el)
     $('<button>')
       .text('loop')
+      .addClass('loop')
       .appendTo(this.el)
     return this
   },
 
   test: function() {
-    var v = new window[this.options.name]({freq: 440})
+    v = new window[this.options.name]({freq: 440})
     connect(v.out, ctx.destination)
     v.play(ctx.currentTime, 1)
+  },
+
+  looping: null,
+  loop: function() {
+    if (this.looping) {
+      scheduler.stop(this.looping)
+      this.looping = null
+      this.$('.loop')
+        .removeClass('running')
+        .text('loop')
+    } else {
+      var p = loopPattern(
+        Pattern(this.options.name, {
+          freq: notes('A4')
+        }, 120)
+      )()
+      connect(p.out, ctx.destination)
+      this.looping = scheduler.play(p, 'loop-voice-' + this.options.name)
+      this.$('.loop')
+        .addClass('running')
+        .text('stop')
+    }
   }
 })
 
@@ -260,7 +284,7 @@ PatternHUD = HUDView.define(/(\w+) = (combine)?Patterns?/, {
     } else {
       var p = loopPattern(this.options.name)()
       connect(p.out, ctx.destination)
-      this.looping = scheduler.play(p, 'loop-' + this.options.name)
+      this.looping = scheduler.play(p, 'loop-pattern' + this.options.name)
       this.$('.loop')
         .addClass('running')
         .text('stop')
@@ -547,8 +571,10 @@ function loopPattern(patName) {
         if (!this.t) {
           this.t = t
         }
+
+        var patCls = _.isString(patName) ? window[patName] : patName
         try {
-          var p = new window[patName]()
+          var p = new patCls()
         } catch (e) {
           console.error('error running pattern', e)
         }
