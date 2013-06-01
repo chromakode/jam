@@ -111,30 +111,59 @@ SampleView = Backbone.View.extend({
     return this
   },
 
+  resize: function(width, height) {
+    this.$el.css({
+      width: width,
+      height: height
+    })
+    this.waveview.render()
+    this._updateSelect()
+  },
+
   _px: function(sec) {
     return Math.round((sec / this.options.buffer.duration) * this.$el.width())
   },
 
   select: function(startsec, endsec) {
-    var left = this._px(startsec)
+    this.selection = [startsec, endsec]
+    this._updateSelect
+  },
+
+  _updateSelect: function() {
+    var left = this._px(this.selection[0])
     this.$selection.css({
       left: left,
-      width: this._px(endsec) - left
+      width: this._px(this.selection[1]) - left
     })
   },
 
   setBuffer: function(buf) {
     this.options.buffer = buf
     this.waveview.setBuffer(buf)
+    this.select(.2, .5)
   }
 })
 
 HUDView = Backbone.View.extend({
   className: 'hud',
+  render: function() {
+    this.$arrow = $('<div>')
+      .addClass('arrow')
+      .appendTo(this.el)
+  },
   position: function(pos) {
+    var hudHeight = this.$el.outerHeight(),
+        // center HUDs vertically by default
+        centerTop = pos.y - hudHeight / 2,
+        // limit to keep the hud onscreen if possible
+        hudTop = clamp(0, centerTop, $(window).height() - hudHeight)
+
     this.$el.css({
       'left': pos.x - this.$el.outerWidth(),
-      'top': pos.y - this.$el.outerHeight() / 2
+      'top': hudTop
+    })
+    this.$arrow.css({
+      'top': hudHeight / 2 + (centerTop - hudTop)
     })
   },
   show: function() {
@@ -160,6 +189,7 @@ VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
     'click .test': 'test'
   },
   render: function() {
+    HUDView.prototype.render.call(this)
     $('<button>')
       .text('test')
       .addClass('test')
@@ -198,6 +228,7 @@ PatternHUD = HUDView.define(/(\w+) = (combine)?Patterns?/, {
   },
 
   render: function() {
+    HUDView.prototype.render.call(this)
     $('<button>')
       .text('play')
       .addClass('play')
@@ -328,11 +359,18 @@ EditorView = Backbone.View.extend({
       var textLayer = this.ace.renderer.$textLayer
           lineEl = textLayer.element.childNodes[range.start.row - textLayer.config.firstRow]
 
-      if (lineEl) {
-        var linePos = $(lineEl).offset()
+      if (!lineEl) {
+        hud.hide()
+        return hud
+      }
+
+      var linePos = $(lineEl).offset(),
+          lineCenter = linePos.top + $(lineEl).height() / 2,
+          onscreen = lineCenter > 0 && lineCenter < $(window).height()
+      if (onscreen) {
         hud.position({
           x: -7,
-          y: linePos.top + $(lineEl).height() / 2
+          y: lineCenter
         })
         hud.show()
       } else {
