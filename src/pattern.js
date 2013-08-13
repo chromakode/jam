@@ -1,105 +1,167 @@
-notes = function(notestr) {
-    var ns = notestr.split('-')
-    return _.map(ns, function(n) {
-      if (n) {
-        return Note.fromLatin(n).frequency()
-      }
+// a stateful pattern writer's trusty companion
+Scribe = function() {
+  this.curBeat = 0
+  this.beats = []
+  this.defaultVars = {}
+}
+_.extend(Scribe.prototype, {
+  set: function(defaultVars) {
+    this.defaultVars = defaultVars
+    return this
+  },
+
+  play: function(vars) {
+    vars = _.defaults(vars, this.defaultVars)
+
+    if (vars.note) {
+      vars.freq = Note.fromLatin(vars.note.toUpperCase()).frequency()
+    }
+
+    this.beats.push({
+      beat: this.curBeat,
+      vars: vars
     })
-}
 
-each = function(props) {
-    var items = []
-    for (var prop in props) {
-        var vals = props[prop]
-        for (var i = 0; i < vals.length; i++) {
-            items[i] = items[i] || {}
-            items[i][prop] = vals[i]
-        }
+    if (vars.wait && vars.duration) {
+      this.wait(vars.duration)
     }
-    return items
+
+    return this
+  },
+
+  wait: function(beats) {
+    this.curBeat += beats
+    return this
+  },
+
+  toEvents: function() {
+    return this.beats
+  }
+})
+Scribe.extend = Backbone.View.extend
+
+
+// a simple base pattern class
+Pattern = function(options) {
+  this.options = _.defaults(options, this.options)
+  this.initialize.apply(this, arguments)
 }
-
-Pattern = function(voice, vars, tempo) {
-  tempo = tempo || 120
-  var beatLen = 60 / tempo
-
-  if (_.isFunction(vars)) {
-      vars = vars()
-  }
-
-  if (!_.isArray(vars)) {
-      vars = each(vars)
-  }
-
-  // FIXME: sane inheritance w/ Backbone style object
-  return function() {
-    var out = ctx.createGainNode()
-    return {
-      duration: beatLen * vars.length,
-      out: out,
-      generator: function(t) {
-        if (this._run) {
-          return
-        }
-        this._run = true
-
-        var events = []
-        for (var i = 0; i < vars.length; i++) {
-            if (!vars[i].freq) {
-              continue
-            }
-            events.push({
-              t: t,
-              vars: vars[i],
-              run: function(ev) {
-                var v = new window[voice](ev.vars)
-                connect(v.out, out)
-                v.play(ev.t, beatLen)
-              },
-              scheduled: true
-            })
-            t += beatLen
-        }
-        return events
-      }
+_.extend(Pattern.prototype, {
+  options: {},
+  initialize: function() {},
+  events: function() {},
+  generator: function() {
+    var events = this.events()
+    if (events.toEvents) {
+      events = events.toEvents()
     }
+    _.each(events, function(event) {
+      event.run = this.runEvent
+      event.scheduled = true  // TODO: what should control this?
+    }, this)
+    return events
+  },
+  runEvent: function(event) {
+    var v = new window[event.vars.voice](event.vars)
+    connect(v.out, event.transport.out)
+    v.play(event.t, event.transport.t(event.vars.duration))
   }
+})
+Pattern.extend = Backbone.View.extend
+
+
+// takes patterns, tempo, schedule, etc and turns them into a timeline of real node manipulating events
+// someday will have seek / pause / rewind
+// TODO:
+// + tempo changes as events
+// + incremental piece wise updating
+// + cache, only regen changed patterns (deep property compare?)
+// + continuous patterns
+Transport = function(options) {
+  this.options = _.defaults(options || {}, this.options)
+  this.out = ctx.createGainNode()
+  this.curBeat = 0
+  this.curTime = 0
+  this._task = null
+  this.initialize.apply(this, arguments)
 }
+_.extend(Transport.prototype, {
+  options: {
+    tempo: 120,
+    sequence: []
+  },
 
-function loopPattern(patName) {
-  return function() {
-    return {
-      out: ctx.createGainNode(),
-      generator: function(t) {
-        if (!this.t) {
-          this.t = t
-        }
+  initialize: function() {},
 
-        var patCls = _.isString(patName) ? window[patName] : patName
-        try {
-          var p = new patCls()
-        } catch (e) {
-          console.error('error running pattern', e)
-        }
-        connect(p.out, this.out)
-        var events = p.generator(this.t)
-        this.t += p.duration
-        return events
-      }
+  set: function(options) {
+    _.extend(this.options, options)
+    this.regen()
+  },
+
+  regen: function() {
+    // braindump: first step, just brute force dump all events for all patterns
+    // second step, incremental generation
+    var events = []
+
+    _.each(this.options.sequence, function(seq) {
+      var pattern = new window[seq.pattern]
+      // TODO: doesn't work for lazy patterns
+      _.each(pattern.generator(), function(event) {
+        event.beat += seq.start
+        event.pattern = pattern
+        event.transport = this
+        events.push(event)
+      }, this)
+    }, this)
+
+    events = _.sortBy(events, 'beat')
+    this.events = events
+  },
+
+  t: function(beats) {
+    var beatLen = 60 /* seconds */ / this.options.tempo
+    return beats * beatLen
+  },
+
+  generator: function(t) {
+    var beatEvents = []
+    var genBeats = 1
+
+    while (this.events.length && this.events[0].beat < this.curBeat + genBeats + 1) {
+      var event = this.events.shift()
+      event.t = this.curTime + this.t(event.beat - this.curBeat)
+      beatEvents.push(event)
     }
-  }
-}
 
-function combinePatterns(patterns) {
-  return function() {
-    var ps = _.map(patterns, function(name) { return window[name]() })
-    return {
-      duration: _.max(_.pluck(ps, 'duration')),
-      out: ctx.createGainNode(),
-      generator: function(t) {
-        connect(_.pluck(ps, 'out'), this.out)
-        return _.compact(_.flatten(_.invoke(ps, 'generator', t)))
-      }
+    console.log(this.curBeat, this.curTime)
+    this.curBeat += genBeats
+    this.curTime += this.t(genBeats)
+
+    if (!beatEvents.length && this.events.length) {
+      beatEvents.push({
+        t: this.curTime,
+        run: function() {}
+      })
     }
+
+    return beatEvents
+  },
+
+  play: function() {
+    this.regen()
+    this.curTime = jam.scheduler.now()
+    this.curBeat = 0
+    this._task = jam.scheduler.start(_.bind(this.generator, this))
+  },
+
+  pause: function() {
+    if (this._task) {
+      jam.scheduler.stop(this._task)
+    }
+  },
+
+  loop: function() {
+  
   }
-}
+})
+Transport.extend = Backbone.View.extend

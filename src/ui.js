@@ -315,7 +315,7 @@ EditorView = Backbone.View.extend({
 
   loadCode: function(url) {
     // FIXME: cleanup
-    if (localStorage['code']) {
+    if (false && localStorage['code']) {
       this.ace.setValue(localStorage['code'])
       this.ace.selection.clearSelection()
     } else {
@@ -414,6 +414,10 @@ EditorView = Backbone.View.extend({
 })
 
 $(function() {
+  // TODO: move to some kind of init
+  jam.transport = new Transport()
+  connect(jam.transport.out, ctx.destination)
+  //
   editorView = new EditorView({el: $('#editor')})
   editorView.render()
   editorView.loadCode('demo.js')

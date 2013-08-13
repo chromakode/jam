@@ -2,32 +2,6 @@ var ctx = new webkitAudioContext()
 // ctx.currentTime won't start ticking until we create something
 ctx.createOscillator()
 
-samples = {
-  index: {},
-
-  fromArrayBuffer: function(name, ab) {
-    ctx.decodeAudioData(ab, _.bind(function(buf) {
-      console.log('loaded file', name)
-      this.index[name] = buf
-    }, this))
-  },
-
-  download: function(url) {
-    var name = _.last(url.split('/'))
-    if (name in this.index) {
-      return
-    }
-
-    var xhr = new XMLHttpRequest()
-    xhr.open('GET', url, true)
-    xhr.responseType = 'arraybuffer'
-    xhr.onload = _.bind(function() {
-      this.fromArrayBuffer(name, xhr.response)
-    }, this)
-    xhr.send()
-  }
-}
-
 function connect(/* [nodes] */) {
   for (var i = 0; i < arguments.length - 1; i++) {
     var node = arguments[i]
@@ -40,13 +14,12 @@ function connect(/* [nodes] */) {
   return arguments[arguments.length - 1]
 }
 
-scheduler = {
+// TODO: web worker?
+Scheduler = function() {}
+_.extend(Scheduler.prototype, {
   running: {},
 
-  play: function(generator, name) {
-    if (!_.isFunction(generator)) {
-      generator = $.proxy(generator, 'generator')
-    }
+  start: function(generator, name) {
     if (!name) {
       name = _.uniqueId('play')
     }
@@ -72,16 +45,24 @@ scheduler = {
     }
   },
 
+  now: function() {
+    return ctx.currentTime
+  },
+
   tick: function() {
+    // TODO: move into pattern's concern?
     function t(event) {
       if (event.scheduled) {
+        // fudge events that run in another scheduler (Web
+        // Audio) by registering them in the scheduler slightly
+        // before they are due to run
         return event.t - .2
       } else {
         return event.t
       }
     }
 
-    var now = ctx.currentTime,
+    var now = this.now(),
         next = Number.MAX_VALUE
 
     _.each(this.running, function(task) {
@@ -111,17 +92,53 @@ scheduler = {
 
     // schedule next tick
     if (next != Number.MAX_VALUE) {
+      this._resetTimeout()
       var wait = Math.max((next - now) * 1000, 100)
       this.timeout = setTimeout($.proxy(this, 'tick'), wait)
     }
   },
 
+  _resetTimeout: function() {
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+      this.timeout = null
+    }
+  },
+
   stopAll: function() {
-    clearTimeout(this.timeout)
+    this._resetTimeout()
     this.running = {}
   }
-}
+})
+
+function Samples() {}
+_.extend(Samples.prototype, {
+  index: {},
+
+  fromArrayBuffer: function(name, ab) {
+    ctx.decodeAudioData(ab, _.bind(function(buf) {
+      console.log('loaded file', name)
+      this.index[name] = buf
+    }, this))
+  },
+
+  download: function(url) {
+    var name = _.last(url.split('/'))
+    if (name in this.index) {
+      return
+    }
+
+    var xhr = new XMLHttpRequest()
+    xhr.open('GET', url, true)
+    xhr.responseType = 'arraybuffer'
+    xhr.onload = _.bind(function() {
+      this.fromArrayBuffer(name, xhr.response)
+    }, this)
+    xhr.send()
+  }
+})
 
 jam = {
-  samples: samples.index
+  samples: new Samples,
+  scheduler: new Scheduler
 }

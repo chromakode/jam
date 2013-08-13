@@ -1,3 +1,5 @@
+// TODO:
+// + persistent voice objects (for bending between notes etc.)
 Voice = function(options) {
   this.options = _.defaults(options, this.options)
   this.out = ctx.createGainNode()
