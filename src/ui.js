@@ -296,7 +296,7 @@ EditorView = Backbone.View.extend({
   huds: [],
 
   render: function() {
-    var editorEl = $(this.make('div', {id: 'ace'})).appendTo(this.$el)
+    var editorEl = $('<div id="ace">').appendTo(this.$el)
     this.ace = ace.edit('ace')
     this.aces = this.ace.getSession()
     this.ace.setKeyboardHandler(require('ace/keyboard/vim').handler)
