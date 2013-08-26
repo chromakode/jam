@@ -109,7 +109,7 @@ _.extend(Transport.prototype, Backbone.Events, {
     var events = []
 
     _.each(this.options.sequence, function(seq) {
-      var pattern = new window[seq.pattern]
+      var pattern = new window[seq.pattern](seq)
       // TODO: doesn't work for lazy patterns
       _.each(pattern.generator(), function(event) {
         event.beat += seq.start
