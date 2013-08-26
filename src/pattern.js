@@ -82,10 +82,11 @@ Transport = function(options) {
   this.out = ctx.createGainNode()
   this.curBeat = 0
   this.curTime = 0
+  this.loopBeat = null
   this._task = null
   this.initialize.apply(this, arguments)
 }
-_.extend(Transport.prototype, {
+_.extend(Transport.prototype, Backbone.Events, {
   options: {
     tempo: 120,
     sequence: []
@@ -96,9 +97,13 @@ _.extend(Transport.prototype, {
   set: function(options) {
     _.extend(this.options, options)
     this.regen()
+    this.trigger('set', options)
   },
 
   regen: function() {
+    console.time('transport regen')
+    this.beatLen = 60 /* seconds */ / this.options.tempo
+
     // braindump: first step, just brute force dump all events for all patterns
     // second step, incremental generation
     var events = []
@@ -116,52 +121,80 @@ _.extend(Transport.prototype, {
 
     events = _.sortBy(events, 'beat')
     this.events = events
+
+    if (this._task) {
+      // FIXME: this forces a re-scan of the whole event list because we don't know where we left off.
+      // I think this could be replaced with a smarter update
+      this.nextEvent = 0
+    }
+
+    console.timeEnd('transport regen')
   },
 
   t: function(beats) {
-    var beatLen = 60 /* seconds */ / this.options.tempo
-    return beats * beatLen
+    return beats * this.beatLen
   },
 
   generator: function(t) {
-    var beatEvents = []
-    var genBeats = 1
+    console.time('transport generator')
+    var newEvents = []
 
-    while (this.events.length && this.events[0].beat < this.curBeat + genBeats + 1) {
-      var event = this.events.shift()
-      event.t = this.curTime + this.t(event.beat - this.curBeat)
-      beatEvents.push(event)
+    while (this.nextEvent < this.events.length && this.curBeat > this.events[this.nextEvent].beat) {
+      // skip events too early
+      this.nextEvent++
     }
 
-    console.log(this.curBeat, this.curTime)
-    this.curBeat += genBeats
-    this.curTime += this.t(genBeats)
+    // feed events for the next beat
+    if (this.loopBeat == 'end' && this.nextEvent >= this.events.length) {
+      this.curBeat = 0
+      this.nextEvent = 0
+    }
 
-    if (!beatEvents.length && this.events.length) {
-      beatEvents.push({
+    while (this.nextEvent < this.events.length && (event = this.events[this.nextEvent]).beat < this.curBeat + 1) {
+      event.t = this.curTime + this.t(event.beat - this.curBeat)
+      newEvents.push(event)
+      this.nextEvent++
+    }
+
+    // if we didn't generate any events, step forward in time and wait til next beat window
+    if (!newEvents.length && this.nextEvent < this.events.length) {
+      // a no-op event makes the scheduler will wait until it before generating more events
+      newEvents.push({
         t: this.curTime,
         run: function() {}
       })
     }
 
-    return beatEvents
+    this.curBeat++
+    this.curTime += this.t(1)
+
+    console.timeEnd('transport generator')
+
+    return newEvents
   },
 
-  play: function() {
-    this.regen()
-    this.curTime = jam.scheduler.now()
-    this.curBeat = 0
-    this._task = jam.scheduler.start(_.bind(this.generator, this))
-  },
-
-  pause: function() {
+  _stop: function() {
     if (this._task) {
       jam.scheduler.stop(this._task)
     }
   },
 
+  play: function() {
+    this.regen()
+    this.curBeat = 0
+    this.curTime = jam.scheduler.now()
+    this.nextEvent = 0
+    this._stop()
+    this._task = jam.scheduler.start(_.bind(this.generator, this))
+  },
+
+  stop: function() {
+    this._stop()
+  },
+
   loop: function() {
-  
+    this.loopBeat = 'end'
+    this.play()
   }
 })
 Transport.extend = Backbone.View.extend

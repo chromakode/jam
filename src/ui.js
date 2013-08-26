@@ -267,24 +267,46 @@ PatternHUD = HUDView.define(/(\w+) = (combine)?Patterns?/, {
     return this
   },
 
+  _init_transport: function() {
+    if (this.transport) {
+      this.transport.stop()
+    }
+
+    this.transport = new Transport()
+    this.transport.set({
+      tempo: jam.transport.options.tempo,
+      sequence: [
+        {start: 0, pattern: this.options.name}
+      ]
+    })
+    this.stopListening(jam.transport)
+
+    // update our temp transport when the main one updates
+    this.listenTo(jam.transport, 'set', function() {
+      this.transport.options.tempo = jam.transport.options.tempo
+      this.transport.regen()
+    })
+  },
+
   play: function() {
-    var p = new window[this.options.name]()
-    connect(p.out, ctx.destination)
-    scheduler.play(p)
+    this._init_transport()
+    connect(this.transport.out, ctx.destination)
+    this.transport.play()
   },
 
   looping: null,
   loop: function() {
     if (this.looping) {
-      scheduler.stop(this.looping)
+      this.transport.stop()
       this.looping = null
       this.$('.loop')
         .removeClass('running')
         .text('loop')
     } else {
-      var p = loopPattern(this.options.name)()
-      connect(p.out, ctx.destination)
-      this.looping = scheduler.play(p, 'loop-pattern' + this.options.name)
+      this._init_transport()
+      connect(this.transport.out, ctx.destination)
+      this.transport.loop()
+      this.looping = true
       this.$('.loop')
         .addClass('running')
         .text('stop')
