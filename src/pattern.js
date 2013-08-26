@@ -30,6 +30,8 @@ _.extend(Scribe.prototype, {
   },
 
   wait: function(beats) {
+    beats = beats || 0
+    this.beats.push({beat: this.curBeat, vars: {duration: beats}})
     this.curBeat += beats
     return this
   },
