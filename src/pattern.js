@@ -53,6 +53,10 @@ _.extend(Pattern.prototype, {
   initialize: function() {},
   events: function() {},
   generator: function() {
+    if (this.ran) {
+      return
+    }
+
     var events = this.events()
     if (events.toEvents) {
       events = events.toEvents()
@@ -61,6 +65,7 @@ _.extend(Pattern.prototype, {
       event.run = this.runEvent
       event.scheduled = true  // TODO: what should control this?
     }, this)
+    this.ran = true
     return events
   },
   runEvent: function(event) {
