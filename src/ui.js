@@ -314,6 +314,48 @@ PatternHUD = HUDView.define(/(\w+) = Pattern/, {
   }
 })
 
+TransportHUD = HUDView.define(/jam.transport.set/, {
+  className: 'hud hud-transport',
+  events: {
+    'click .play': 'play',
+    'click .loop': 'loop'
+  },
+
+  render: function() {
+    HUDView.prototype.render.call(this)
+    $('<button>')
+      .text('play')
+      .addClass('play')
+      .appendTo(this.el)
+    $('<button>')
+      .text('loop')
+      .addClass('loop')
+      .appendTo(this.el)
+    return this
+  },
+
+  play: function() {
+    jam.transport.play()
+  },
+
+  looping: null,
+  loop: function() {
+    if (this.looping) {
+      jam.transport.stop()
+      this.looping = null
+      this.$('.loop')
+        .removeClass('running')
+        .text('loop')
+    } else {
+      jam.transport.loop()
+      this.looping = true
+      this.$('.loop')
+        .addClass('running')
+        .text('stop')
+    }
+  }
+})
+
 EditorView = Backbone.View.extend({
   huds: [],
 
