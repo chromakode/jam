@@ -247,7 +247,7 @@ SampleVoiceHUD = VoiceHUD.define(/(\w+) = SampleVoice.extend/, {
   }
 })
 
-PatternHUD = HUDView.define(/(\w+) = (combine)?Patterns?/, {
+PatternHUD = HUDView.define(/(\w+) = Pattern/, {
   className: 'hud hud-pattern',
   events: {
     'click .play': 'play',
