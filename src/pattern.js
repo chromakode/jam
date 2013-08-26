@@ -189,7 +189,7 @@ _.extend(Transport.prototype, Backbone.Events, {
 
     // if we didn't generate any events, step forward in time and wait til next beat window
     if (!newEvents.length && this.nextEvent < this.events.length) {
-      // a no-op event makes the scheduler will wait until it before generating more events
+      // a no-op event makes the scheduler wait until it before generating more events
       newEvents.push({
         t: this.curTime,
         run: function() {}
