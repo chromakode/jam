@@ -120,13 +120,34 @@ _.extend(Transport.prototype, Backbone.Events, {
 
     _.each(this.options.sequence, function(seq) {
       var pattern = new window[seq.pattern](seq)
-      // TODO: doesn't work for lazy patterns
-      _.each(pattern.generator(), function(event) {
-        event.beat += seq.start
+      var patternStart = seq.start
+      var patternEvents = pattern.generator()
+      var event
+      while (event = patternEvents.shift()) {
+        event.beat += patternStart
         event.pattern = pattern
         event.transport = this
-        events.push(event)
-      }, this)
+
+        if (seq.end && event.beat >= seq.end) {
+          break
+        } else {
+          events.push(event)
+        }
+
+        if (!patternEvents || !patternEvents.length) {
+          patternEvents = pattern.generator()
+          // if the generator ended...
+          if (!patternEvents || !patternEvents.length) {
+            if (seq.loop && seq.end) {
+              pattern = new window[seq.pattern](seq)
+              patternEvents = pattern.generator()
+              patternStart = event.beat + event.vars.duration
+            } else {
+              break
+            }
+          }
+        }
+      }
     }, this)
 
     events = _.sortBy(events, 'beat')
