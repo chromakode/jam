@@ -43,11 +43,11 @@ Scribe.extend = Backbone.View.extend
 
 // a simple base pattern class
 Pattern = function(options) {
-  this.options = _.defaults(options, this.options)
+  this.options = _.defaults(options, this.defaults)
   this.initialize.apply(this, arguments)
 }
 _.extend(Pattern.prototype, {
-  options: {},
+  defaults: {},
   initialize: function() {},
   events: function() {},
   generator: function() {
