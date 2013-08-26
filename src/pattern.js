@@ -69,6 +69,9 @@ _.extend(Pattern.prototype, {
     return events
   },
   runEvent: function(event) {
+    if (!event.vars.voice) {
+      return
+    }
     var v = new window[event.vars.voice](event.vars)
     connect(v.out, event.transport.out)
     v.play(event.t, event.transport.t(event.vars.duration))
