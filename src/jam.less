@@ -6,6 +6,14 @@
   transition: @arguments;
 }
 
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .gradient (@side, @stops) {
   background: -webkit-linear-gradient(@side, @stops);
   background: -moz-linear-gradient(@side, @stops);
@@ -24,17 +32,66 @@
 }
 
 #volume {
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
+  &, .icon, .level {
+    display: inline-block;
+  }
+
+  cursor: pointer;
   opacity: .6;
   &:hover {
     opacity: 1;
   }
   .transition(opacity, 0.2s);
+  .no-select;
 
-  .icon-volume-off {
-    color: red;
+  .icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    margin-right: 10px;
+  }
+
+  .level {
+    position: relative;
+    border-bottom: 2px solid green;
+
+    &:after, .active:after {
+      top: 0;
+      left: 0;
+      content: '';
+      display: block;
+      border-bottom: 24px solid #ccc;
+      border-left: 96px solid transparent;
+    }
+
+    &:after {
+      position: absolute;
+      z-index: -1;
+    }
+
+    .active {
+      width: 10%;
+      overflow: hidden;
+
+      &:after {
+        border-bottom-color: green;
+      }
+    }
+  }
+
+  &.muted {
+    .icon-volume-off {
+      color: red;
+      text-indent: -4px;
+    }
+
+    .level {
+      border-bottom-color: red;
+
+      .active:after {
+        border-bottom-color: gray;
+      }
+    }
   }
 }
 
