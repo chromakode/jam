@@ -224,8 +224,9 @@ jam.transport.set({
     {start: 5*8, end: 5*14, loop: true, pattern: 'arpeggio', voice: 'bleepsquare', note: 'g2', offsets: minor, duration: 4},
     {start: 5*10, end: 5*13, loop: true, pattern: 'bassline'},
     {start: 5*10, end: 5*16, loop: true, pattern: 'arpeggio', voice: 'randomsquare', note: 'g5', offsets: minor, duration: 2},
-    {start: 5*13, end: 5*16 - 4, loop: true, pattern: 'arpeggio', voice: 'saw', note: 'g3', offsets: minor, duration: 1},
-    {start: 5*12, end: 5*16 - 1, loop: true, pattern: 'arpeggio', voice: 'glitchsquare', note: 'g3', offsets: melody, duration: 4},
+    {start: 5*13 - 3, end: 5*16 - 4, loop: true, pattern: 'arpeggio', voice: 'saw', note: 'g3', offsets: minor, duration: 1},
+    {start: 5*13 - 3, end: 5*16 - 4, loop: true, pattern: 'arpeggio', voice: 'notsaw', note: 'g6', offsets: minor, duration: 3},
+    {start: 5*12, end: 5*16, loop: true, pattern: 'arpeggio', voice: 'glitchsquare', note: 'g3', offsets: melody, duration: 4},
     {start: 5*12, end: 5*16, loop: true, pattern: 'bassline'},
   ]
 })
