@@ -476,6 +476,39 @@ EditorView = Backbone.View.extend({
   }
 })
 
+VolumeView = Backbone.View.extend({
+  events: {
+    'click': 'toggleVolume'
+  },
+
+  initialize: function() {
+    this._targetVol = jam.out.gain.value
+    this.$el.html('<span class="icon icon-volume-up"></span>')
+  },
+
+  render: function() {
+    var $icon = this.$('.icon')
+    $icon.removeClass('icon-volume-off icon-volume-up')
+    if (this._targetVol > 0) {
+      $icon.addClass('icon-volume-up')
+    } else {
+      $icon.addClass('icon-volume-off')
+    }
+    return this
+  },
+
+  toggleVolume: function() {
+    if (jam.out.gain.value > 0) {
+      this._targetVol = 0
+    } else {
+      this._targetVol = 1
+    }
+    jam.out.gain.setValueAtTime(jam.out.gain.value, ctx.currentTime)
+    jam.out.gain.linearRampToValueAtTime(this._targetVol, ctx.currentTime + .15)
+    this.render()
+  }
+})
+
 $(function() {
   // TODO: move to some kind of init
   jam.transport = new Transport()
@@ -483,6 +516,10 @@ $(function() {
   editorView = new EditorView({el: $('#editor')})
   editorView.render()
   editorView.loadCode('demo.js')
+
+  volumeView = new VolumeView({el: $('#volume')})
+  volumeView.render()
+
   $(window)
     .bind('dragenter dragover drop', function(ev) {
       ev.stopPropagation()

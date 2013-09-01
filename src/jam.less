@@ -22,6 +22,22 @@
   right: 0;
   z-index: 10;
 }
+
+#volume {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  opacity: .6;
+  &:hover {
+    opacity: 1;
+  }
+  .transition(opacity, 0.2s);
+
+  .icon-volume-off {
+    color: red;
+  }
+}
+
 #ace {
   position: absolute;
   top: 0;
