@@ -1,7 +1,3 @@
-var ctx = new webkitAudioContext()
-// ctx.currentTime won't start ticking until we create something
-ctx.createOscillator()
-
 function connect(/* [nodes] */) {
   for (var i = 0; i < arguments.length - 1; i++) {
     var node = arguments[i]
@@ -142,3 +138,7 @@ jam = {
   samples: new Samples,
   scheduler: new Scheduler
 }
+
+var ctx = new webkitAudioContext()
+// ctx.currentTime won't start ticking until we create something
+ctx.createOscillator()
