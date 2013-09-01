@@ -90,6 +90,7 @@ Pattern.extend = Backbone.View.extend
 Transport = function(options) {
   this.options = _.defaults(options || {}, this.options)
   this.out = ctx.createGainNode()
+  connect(this.out, jam.out)
   this.curBeat = 0
   this.curTime = 0
   this.loopBeat = null

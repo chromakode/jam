@@ -279,6 +279,7 @@ PatternHUD = HUDView.define(/(\w+) = Pattern/, {
         {start: 0, pattern: this.options.name}
       ]
     })
+    connect(this.transport.out, jam.out)
     this.stopListening(jam.transport)
 
     // update our temp transport when the main one updates
@@ -290,7 +291,6 @@ PatternHUD = HUDView.define(/(\w+) = Pattern/, {
 
   play: function() {
     this._init_transport()
-    connect(this.transport.out, ctx.destination)
     this.transport.play()
   },
 
@@ -304,7 +304,6 @@ PatternHUD = HUDView.define(/(\w+) = Pattern/, {
         .text('loop')
     } else {
       this._init_transport()
-      connect(this.transport.out, ctx.destination)
       this.transport.loop()
       this.looping = true
       this.$('.loop')
@@ -480,7 +479,6 @@ EditorView = Backbone.View.extend({
 $(function() {
   // TODO: move to some kind of init
   jam.transport = new Transport()
-  connect(jam.transport.out, ctx.destination)
   //
   editorView = new EditorView({el: $('#editor')})
   editorView.render()

@@ -142,3 +142,5 @@ jam = {
 var ctx = new webkitAudioContext()
 // ctx.currentTime won't start ticking until we create something
 ctx.createOscillator()
+jam.out = ctx.createGainNode()
+connect(jam.out, ctx.destination)
