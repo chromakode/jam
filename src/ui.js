@@ -193,14 +193,8 @@ VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
 
   render: function() {
     HUDView.prototype.render.call(this)
-    $('<button>')
-      .text('test')
-      .addClass('test')
-      .appendTo(this.el)
-    $('<button>')
-      .text('loop')
-      .addClass('loop')
-      .appendTo(this.el)
+    $('<button class="test icon-play">').appendTo(this.el)
+    $('<button class="loop icon-loop">').appendTo(this.el)
     return this
   },
 
@@ -256,14 +250,8 @@ PatternHUD = HUDView.define(/(\w+) = Pattern/, {
 
   render: function() {
     HUDView.prototype.render.call(this)
-    $('<button>')
-      .text('play')
-      .addClass('play')
-      .appendTo(this.el)
-    $('<button>')
-      .text('loop')
-      .addClass('loop')
-      .appendTo(this.el)
+    $('<button class="play icon-play">').appendTo(this.el)
+    $('<button class="loop icon-loop">').appendTo(this.el)
     return this
   },
 
@@ -299,16 +287,12 @@ PatternHUD = HUDView.define(/(\w+) = Pattern/, {
     if (this.looping) {
       this.transport.stop()
       this.looping = null
-      this.$('.loop')
-        .removeClass('running')
-        .text('loop')
+      this.$('.loop').removeClass('icon-stop running').addClass('icon-loop')
     } else {
       this._init_transport()
       this.transport.loop()
       this.looping = true
-      this.$('.loop')
-        .addClass('running')
-        .text('stop')
+      this.$('.loop').removeClass('icon-loop').addClass('icon-stop running')
     }
   }
 })
@@ -322,14 +306,8 @@ TransportHUD = HUDView.define(/jam.transport.set/, {
 
   render: function() {
     HUDView.prototype.render.call(this)
-    $('<button>')
-      .text('play')
-      .addClass('play')
-      .appendTo(this.el)
-    $('<button>')
-      .text('loop')
-      .addClass('loop')
-      .appendTo(this.el)
+    $('<button class="play icon-play">').appendTo(this.el)
+    $('<button class="loop icon-loop">').appendTo(this.el)
     return this
   },
 
@@ -342,15 +320,11 @@ TransportHUD = HUDView.define(/jam.transport.set/, {
     if (this.looping) {
       jam.transport.stop()
       this.looping = null
-      this.$('.loop')
-        .removeClass('running')
-        .text('loop')
+      this.$('.loop').removeClass('icon-stop running').addClass('icon-loop')
     } else {
       jam.transport.loop()
       this.looping = true
-      this.$('.loop')
-        .addClass('running')
-        .text('stop')
+      this.$('.loop').removeClass('icon-loop').addClass('icon-stop running')
     }
   }
 })
