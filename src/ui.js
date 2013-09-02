@@ -478,8 +478,8 @@ VolumeView = Backbone.View.extend({
 
   setVolume: function(value) {
     this._targetVol = value
-    jam.out.gain.setValueAtTime(jam.out.gain.value, ctx.currentTime)
-    jam.out.gain.linearRampToValueAtTime(value, ctx.currentTime + .15)
+    jam.gain.gain.setValueAtTime(jam.gain.gain.value, ctx.currentTime)
+    jam.gain.gain.linearRampToValueAtTime(value, ctx.currentTime + .15)
     this.render()
   },
 
@@ -499,6 +499,37 @@ VolumeView = Backbone.View.extend({
   }
 })
 
+LevelsMeterView = Backbone.View.extend({
+  initialize: function() {
+    jam.outbuffer.addEventListener('audioprocess', _.bind(this.update, this), false)
+    this.$containers = []
+    this.$avgbars = []
+    this.$maxbars = []
+    for (var i = 0; i < ctx.destination.channelCount; i++) {
+      var $container = $('<div class="container channel1"></div>').appendTo(this.$el)
+      this.$containers.push($container)
+      this.$avgbars.push($('<div class="bar avg">').appendTo($container))
+      this.$maxbars.push($('<div class="bar max">').appendTo($container))
+    }
+  },
+
+  update: function(ev) {
+    var buf = ev.inputBuffer
+    for (var c = 0; c < buf.numberOfChannels; c++) {
+      var data = buf.getChannelData(c)
+      var sum = 0
+      for (var i = 0; i < data.length; i++) {
+        sum += Math.abs(data[i])
+      }
+      var avg = sum / data.length
+      var max = _.max(data)
+      this.$avgbars[c].width(Math.round(100 * clamp(0, avg, 1)) + '%')
+      this.$maxbars[c].width(Math.round(100 * clamp(0, max, 1)) + '%')
+      this.$containers[c].toggleClass('clip', max >= 1)
+    }
+  }
+})
+
 $(function() {
   // TODO: move to some kind of init
   jam.transport = new Transport()
@@ -509,6 +540,8 @@ $(function() {
 
   volumeView = new VolumeView({el: $('#volume')})
   volumeView.render()
+
+  levelsView = new LevelsMeterView({el: $('#meter')})
 
   $(window)
     .bind('dragenter dragover drop', function(ev) {

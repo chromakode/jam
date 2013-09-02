@@ -140,7 +140,10 @@ jam = {
 }
 
 var ctx = new webkitAudioContext()
-// ctx.currentTime won't start ticking until we create something
-ctx.createOscillator()
+
 jam.out = ctx.createGainNode()
-connect(jam.out, ctx.destination)
+jam.gain = ctx.createGainNode()
+connect(jam.out, jam.gain, ctx.destination)
+
+jam.outbuffer = ctx.createScriptProcessor(1024, ctx.destination.channelCount, ctx.destination.channelCount)
+connect(jam.out, jam.outbuffer, ctx.destination)
