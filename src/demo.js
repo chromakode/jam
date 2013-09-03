@@ -2,6 +2,7 @@ sin = Voice.extend({
   attack: .05,
   release: .5,
   gain: .2,
+  pan: 0,
   type: 0,
   filterType: 0,
   filterFreq: 1000,
@@ -9,10 +10,14 @@ sin = Voice.extend({
     this.out = ctx.createGainNode()
     this.o = ctx.createOscillator()
     this.o.type = this.type
+    this.p = ctx.createPanner()
+    this.p.panningModel = 'equalpower'
+    this.p.rolloffFactor = 0
+    this.p.setPosition(this.pan, 0, -5)
     this.f = ctx.createBiquadFilter()
     this.f.type = this.filterType
     this.f.frequency.value = this.filterFreq
-    connect(this.o, this.f, this.out)
+    connect(this.o, this.p, this.f, this.out)
   },
 
   start: function(t) {
@@ -33,6 +38,7 @@ lead = sin.extend({
   attack: 0,
   release: 1,
   gain: .4,
+  pan: 0,
   type: 3,
   filterType: 1,
   filterFreq: 2000,
@@ -45,6 +51,7 @@ bass = sin.extend({
 saw = sin.extend({
   release: 1,
   gain: .2,
+  pan: -1.3,
   type: 2, 
   filterType: 1,
   filterFreq: 1000
@@ -53,6 +60,7 @@ saw = sin.extend({
 notsaw = sin.extend({
   release: 1,
   gain: .2,
+  pan: 1.2,
   type: 3, 
   filterType: 0,
   filterFreq: 1000
@@ -62,6 +70,7 @@ square = sin.extend({
   type: 1, 
   release: 1,
   gain: .15,
+  pan: .2,
   filterType: 0,
   filterFreq: 2000,
   start: function(t) {
@@ -75,6 +84,7 @@ glitchsquare = sin.extend({
   type: 1, 
   release: 1,
   gain: .15,
+  pan: .3,
   filterType: 0,
   filterFreq: 2000,
   start: function(t) {
@@ -110,6 +120,7 @@ randomsquare = sin.extend({
   type: 1, 
   release: 1,
   gain: .15,
+  pan: -.5,
   filterType: 0,
   filterFreq: 2000,
   start: function(t) {
