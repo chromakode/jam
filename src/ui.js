@@ -184,7 +184,7 @@ HUDView = Backbone.View.extend({
   }
 })
 
-VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
+VoiceHUD = HUDView.define(/(\w+)\s*=\s*Voice.extend/, {
   className: 'hud hud-voice',
   events: {
     'click .test': 'test',
@@ -227,7 +227,7 @@ VoiceHUD = HUDView.define(/(\w+) = Voice.extend/, {
   }
 })
 
-SampleVoiceHUD = VoiceHUD.define(/(\w+) = SampleVoice.extend/, {
+SampleVoiceHUD = VoiceHUD.define(/(\w+)\s*=\s*SampleVoice.extend/, {
   className: 'hud hud-voice hud-sample',
   render: function() {
     VoiceHUD.prototype.render.apply(this)
@@ -235,13 +235,13 @@ SampleVoiceHUD = VoiceHUD.define(/(\w+) = SampleVoice.extend/, {
     this.$el.append(this.sampleView.render().el)
     setTimeout(_.bind(function() {
       name = window[this.options.name].prototype.options.sample
-      this.sampleView.setBuffer(samples.index[name])
+      this.sampleView.setBuffer(jam.samples.index[name])
     }, this), 100)
     return this
   }
 })
 
-PatternHUD = HUDView.define(/(\w+) = Pattern/, {
+PatternHUD = HUDView.define(/(\w+)\s*=\s*Pattern/, {
   className: 'hud hud-pattern',
   events: {
     'click .play': 'play',
