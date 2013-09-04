@@ -32,7 +32,7 @@ _.extend(Scribe.prototype, {
 
   wait: function(beats) {
     beats = beats || 0
-    this.beats.push({beat: this.curBeat, vars: {duration: beats}})
+    this.beats.push({beat: this.curBeat, duration: beats})
     this.curBeat += beats
     return this
   },
@@ -114,38 +114,46 @@ _.extend(Transport.prototype, Backbone.Events, {
 
   regen: function() {
     console.time('transport regen')
-    this.beatLen = 60 /* seconds */ / this.options.tempo
 
     // braindump: first step, just brute force dump all events for all patterns
     // second step, incremental generation
     var events = []
 
     _.each(this.options.sequence, function(seq) {
-      var pattern = new window[seq.pattern](seq)
-      var patternStart = seq.start
-      var patternEvents = pattern.generator()
-      var event
-      while (event = patternEvents.shift()) {
-        event.beat += patternStart
-        event.pattern = pattern
-        event.transport = this
+      if (seq.tempo) {
+        events.push({
+          beat: seq.start,
+          tempo: seq.tempo
+        })
+      }
 
-        if (seq.end && event.beat >= seq.end) {
-          break
-        } else {
-          events.push(event)
-        }
+      if (seq.pattern) {
+        var pattern = new window[seq.pattern](seq)
+        var patternStart = seq.start
+        var patternEvents = pattern.generator()
+        var event
+        while (event = patternEvents.shift()) {
+          event.beat += patternStart
+          event.pattern = pattern
+          event.transport = this
 
-        if (!patternEvents || !patternEvents.length) {
-          patternEvents = pattern.generator()
-          // if the generator ended...
+          if (seq.end && event.beat >= seq.end) {
+            break
+          } else {
+            events.push(event)
+          }
+
           if (!patternEvents || !patternEvents.length) {
-            if (seq.loop && seq.end) {
-              pattern = new window[seq.pattern](seq)
-              patternEvents = pattern.generator()
-              patternStart = event.beat + event.duration
-            } else {
-              break
+            patternEvents = pattern.generator()
+            // if the generator ended...
+            if (!patternEvents || !patternEvents.length) {
+              if (seq.loop && seq.end) {
+                pattern = new window[seq.pattern](seq)
+                patternEvents = pattern.generator()
+                patternStart = event.beat + event.duration
+              } else {
+                break
+              }
             }
           }
         }
@@ -170,6 +178,7 @@ _.extend(Transport.prototype, Backbone.Events, {
 
   generator: function(t) {
     console.time('transport generator')
+    this.beatLen = 60 /* seconds */ / this.options.tempo
     var newEvents = []
 
     while (this.nextEvent < this.events.length && this.curBeat > this.events[this.nextEvent].beat) {
@@ -177,15 +186,28 @@ _.extend(Transport.prototype, Backbone.Events, {
       this.nextEvent++
     }
 
-    // feed events for the next beat
     if (this.loopBeat == 'end' && this.nextEvent >= this.events.length) {
+      // advance the clock for the final beats of the loop
+      var lastEvent = _.last(this.events),
+          lastBeat = lastEvent.beat + lastEvent.duration
+      this.curTime += this.t(lastBeat - this.curBeat)
+
+      // reset to the beginning and start generating events for the next beat
       this.curBeat = 0
       this.nextEvent = 0
     }
 
     while (this.nextEvent < this.events.length && (event = this.events[this.nextEvent]).beat < this.curBeat + 1) {
+      if (event.tempo) {
+        this.options.tempo = event.tempo
+        this.beatLen = 60 /* seconds */ / this.options.tempo
+      }
+
       event.t = this.curTime + this.t(event.beat - this.curBeat)
-      newEvents.push(event)
+
+      if (event.run) {
+        newEvents.push(event)
+      }
       this.nextEvent++
     }
 
