@@ -556,7 +556,7 @@ $(function() {
           reader = new FileReader()
       reader.readAsArrayBuffer(file)
       $(reader).bind('load', function() {
-        samples.fromArrayBuffer(file.name, reader.result)
+        jam.samples.fromArrayBuffer(file.name, reader.result)
       })
     })
 })

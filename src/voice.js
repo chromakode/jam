@@ -22,7 +22,7 @@ Voice.extend = Backbone.View.extend
 SampleVoice = Voice.extend({
   initialize: function() {
     this.s = ctx.createBufferSource()
-    this.s.buffer = samples.index[this.options.sample]
+    this.s.buffer = jam.samples.index[this.options.sample]
     connect(this.s, this.out)
   },
 
