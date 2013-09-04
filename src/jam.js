@@ -121,7 +121,7 @@ _.extend(Samples.prototype, {
   download: function(url) {
     var name = _.last(url.split('/'))
     if (name in this.index) {
-      return
+      return name
     }
 
     var xhr = new XMLHttpRequest()
@@ -131,6 +131,7 @@ _.extend(Samples.prototype, {
       this.fromArrayBuffer(name, xhr.response)
     }, this)
     xhr.send()
+    return name
   }
 })
 
