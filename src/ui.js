@@ -429,7 +429,7 @@ EditorView = Backbone.View.extend({
         return hud
       }
 
-      var linePos = $(lineEl).offset(),
+      var linePos = $(lineEl).position(),
           lineCenter = linePos.top + $(lineEl).height() / 2,
           onscreen = lineCenter > 0 && lineCenter < $(window).height()
       if (onscreen) {
