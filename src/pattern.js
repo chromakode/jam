@@ -32,7 +32,7 @@ _.extend(Scribe.prototype, {
 
   wait: function(beats) {
     beats = beats || 0
-    this.beats.push({beat: this.curBeat, duration: beats})
+    this.beats.push({beat: this.curBeat, duration: beats, vars: {}})
     this.curBeat += beats
     return this
   },
