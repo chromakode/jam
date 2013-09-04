@@ -19,6 +19,7 @@ _.extend(Scribe.prototype, {
 
     this.beats.push({
       beat: this.curBeat,
+      duration: vars.duration,
       vars: vars
     })
 
@@ -74,7 +75,7 @@ _.extend(Pattern.prototype, {
     }
     var v = new window[event.vars.voice](event.vars)
     connect(v.out, event.transport.out)
-    v.play(event.t, event.transport.t(event.vars.duration))
+    v.play(event.t, event.transport.t(event.duration))
   }
 })
 Pattern.extend = Backbone.View.extend
@@ -142,7 +143,7 @@ _.extend(Transport.prototype, Backbone.Events, {
             if (seq.loop && seq.end) {
               pattern = new window[seq.pattern](seq)
               patternEvents = pattern.generator()
-              patternStart = event.beat + event.vars.duration
+              patternStart = event.beat + event.duration
             } else {
               break
             }
