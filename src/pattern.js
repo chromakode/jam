@@ -23,8 +23,8 @@ _.extend(Scribe.prototype, {
       vars: vars
     })
 
-    if (vars.wait && vars.duration) {
-      this.wait(vars.duration)
+    if (vars.wait) {
+      this.curBeat += vars.duration
     }
 
     return this
