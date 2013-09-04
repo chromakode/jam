@@ -339,6 +339,7 @@ EditorView = Backbone.View.extend({
     this.ace.setKeyboardHandler(require('ace/keyboard/vim').handler)
     this.aces.setMode('ace/mode/javascript')
     this.aces.setUseWorker(false)
+    this.aces.setTabSize(2)
     this.aces.bgTokenizer.on('update', _.bind(function() {
       this.updateFoldRanges()
       this.updateHUD()
