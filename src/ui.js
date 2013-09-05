@@ -175,16 +175,16 @@ HUDView = Backbone.View.extend({
   }
 }, {
   defs: [],
-  define: function(re/*, ... */) {
+  define: function(match/*, ... */) {
     var cls = this.extend.apply(this, _.rest(arguments))
-    cls.re = re
+    cls.match = match
     cls.define = this.define
-    HUDView.defs.push(cls)
+    HUDView.defs.unshift(cls)
     return cls
   }
 })
 
-VoiceHUD = HUDView.define(/(\w+)\s*=\s*Voice.extend/, {
+VoiceHUD = HUDView.define(Voice, {
   className: 'hud hud-voice',
   events: {
     'click .test': 'test',
@@ -227,7 +227,7 @@ VoiceHUD = HUDView.define(/(\w+)\s*=\s*Voice.extend/, {
   }
 })
 
-SampleVoiceHUD = VoiceHUD.define(/(\w+)\s*=\s*SampleVoice.extend/, {
+SampleVoiceHUD = VoiceHUD.define(SampleVoice, {
   className: 'hud hud-voice hud-sample',
   render: function() {
     VoiceHUD.prototype.render.apply(this)
@@ -241,7 +241,7 @@ SampleVoiceHUD = VoiceHUD.define(/(\w+)\s*=\s*SampleVoice.extend/, {
   }
 })
 
-PatternHUD = HUDView.define(/(\w+)\s*=\s*Pattern/, {
+PatternHUD = HUDView.define(Pattern, {
   className: 'hud hud-pattern',
   events: {
     'click .play': 'play',
@@ -297,7 +297,7 @@ PatternHUD = HUDView.define(/(\w+)\s*=\s*Pattern/, {
   }
 })
 
-TransportHUD = HUDView.define(/jam.transport.set/, {
+TransportHUD = HUDView.define(/(jam.transport.set)/, {
   className: 'hud hud-transport',
   events: {
     'click .play': 'play',
@@ -331,6 +331,7 @@ TransportHUD = HUDView.define(/jam.transport.set/, {
 
 EditorView = Backbone.View.extend({
   huds: [],
+  defRe: /(\w+)\s*=\s*\w+/,
 
   render: function() {
     var editorEl = $('<div id="ace">').appendTo(this.$el)
@@ -395,16 +396,26 @@ EditorView = Backbone.View.extend({
   updateHUD: function() {
     var huds = _.map(this.foldRanges, function(range) {
       var startLine = this.aces.getLine(range.start.row)
+      var defMatch = startLine.match(this.defRe)
+      var hudCls = _.find(HUDView.defs, function(cls) {
+        if (cls.match instanceof RegExp) {
+          match = startLine.match(cls.match)
+          return !!match
+        } else {
+          match = defMatch
+          if (!match) {
+            return
+          }
 
-      var match, hudCls
-      for (var i = 0; i < HUDView.defs.length; i++) {
-        hudCls = HUDView.defs[i]
-        match = startLine.match(hudCls.re)
-        if (match) {
-          break
+          var obj = window[match[1]]
+          if (!obj) {
+            return
+          }
+
+          return obj.prototype instanceof cls.match
         }
-      }
-      if (!match) {
+      }, this)
+      if (!hudCls) {
         return
       }
 
