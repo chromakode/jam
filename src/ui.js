@@ -330,10 +330,10 @@ TransportHUD = HUDView.define(/(jam.transport.set)/, {
 })
 
 EditorView = Backbone.View.extend({
-  huds: [],
   defRe: /(\w+)\s*=\s*\w+/,
 
   render: function() {
+    this.huds = {}
     var editorEl = $('<div id="ace">').appendTo(this.$el)
     this.ace = ace.edit('ace')
     this.aces = this.ace.getSession()
@@ -345,7 +345,7 @@ EditorView = Backbone.View.extend({
       this.updateFoldRanges()
       this.updateHUD()
     }, this))
-    this.ace.on('change', $.proxy(this, 'updateHUD'))
+    this.ace.on('change', $.proxy(this, 'hideHUDs'))
     // FIXME: pass an arg to skip some checks only necessary if code changed
     this.ace.renderer.scrollBar.on('scroll', $.proxy(this, 'updateHUD'))
     this.ace.on('change', _.debounce($.proxy(this, 'execute'), 100))
@@ -453,6 +453,13 @@ EditorView = Backbone.View.extend({
       oldHud.remove()
       delete this.huds[oldHud.options.name]
     }, this)
+  },
+
+  hideHUDs: function() {
+    console.log(this.huds)
+    _.each(this.huds, function(hud) {
+      hud.hide()
+    })
   }
 })
 
