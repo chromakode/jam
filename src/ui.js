@@ -393,12 +393,6 @@ EditorView = Backbone.View.extend({
   },
 
   updateHUD: function() {
-    // FIXME: unused
-    var row = this.aces.selection.getCursor().row
-    var currentRange = _.find(this.foldRanges, function(r) {
-      return r.start.row <= row && r.end.row >= row }
-    )
-
     var huds = _.map(this.foldRanges, function(range) {
       var startLine = this.aces.getLine(range.start.row)
 
