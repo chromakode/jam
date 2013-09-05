@@ -381,7 +381,7 @@ EditorView = Backbone.View.extend({
         foldRanges = []
 
     while (row < maxRow) {
-      var foldRange = this.aces.foldWidgets[row] && this.aces.getFoldWidgetRange(row)
+      var foldRange = this.aces.getFoldWidgetRange(row)
       if (foldRange) {
         foldRanges.push(foldRange)
         row = foldRange.end.row
