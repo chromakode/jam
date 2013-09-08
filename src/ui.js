@@ -456,7 +456,6 @@ EditorView = Backbone.View.extend({
   },
 
   hideHUDs: function() {
-    console.log(this.huds)
     _.each(this.huds, function(hud) {
       hud.hide()
     })
