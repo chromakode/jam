@@ -157,7 +157,8 @@ HUDView = Backbone.View.extend({
         // center HUDs vertically by default
         centerTop = pos.y - hudHeight / 2,
         // limit to keep the hud onscreen if possible
-        hudTop = clamp(0, centerTop, $(window).height() - hudHeight)
+        spacing = 3,
+        hudTop = clamp(spacing, centerTop, this.$el.parent().height() - hudHeight - spacing)
 
     this.$el.css({
       'left': pos.x - this.$el.outerWidth(),
@@ -347,7 +348,7 @@ EditorView = Backbone.View.extend({
     }, this))
     this.ace.on('change', $.proxy(this, 'hideHUDs'))
     // FIXME: pass an arg to skip some checks only necessary if code changed
-    this.ace.renderer.scrollBar.on('scroll', $.proxy(this, 'updateHUD'))
+    this.ace.renderer.on('afterRender', $.proxy(this, 'updateHUD'))
     this.ace.on('change', _.debounce($.proxy(this, 'execute'), 100))
     this.updateHUD()
   },
@@ -434,13 +435,14 @@ EditorView = Backbone.View.extend({
         return hud
       }
 
-      var linePos = $(lineEl).position(),
-          lineCenter = linePos.top + $(lineEl).height() / 2,
-          onscreen = lineCenter > 0 && lineCenter < $(window).height()
+      var lineTop = $(lineEl).offset().top - this.$el.offset().top,
+          lineHeight = $(lineEl).height(),
+          onscreen = lineTop > 0 && lineTop + lineHeight < this.$el.height()
+
       if (onscreen) {
         hud.position({
           x: -7,
-          y: lineCenter
+          y: lineTop + lineHeight / 2
         })
         hud.show()
       } else {
