@@ -17,6 +17,26 @@ _.extend(Voice.prototype, {
     this.stop(time + length)
   }
 })
+_.extend(Voice, {
+  // Run events 100ms ahead of time since the more accurate Web Audio scheduler
+  // will actually be running them.
+  _scheduleFudge: .1,
+
+  initEvent: function(event) {
+    event.finalize = this.finalizeEvent
+    event.run = this.runEvent
+  },
+
+  finalizeEvent: function(event) {
+    event.t -= Voice._scheduleFudge
+  },
+
+  runEvent: function(event) {
+    var v = new window[event.vars.voice](event.vars)
+    connect(v.out, event.transport.out)
+    v.play(event.t + Voice._scheduleFudge, event.transport.t(event.duration))
+  }
+})
 Voice.extend = Backbone.View.extend
 
 SampleVoice = Voice.extend({
