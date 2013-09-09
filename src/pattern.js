@@ -89,7 +89,9 @@ Transport = function(options) {
   this.options = _.defaults(options || {}, this.options)
   this.out = ctx.createGainNode()
   connect(this.out, jam.out)
+  this._curTime = 0
   this.loopBeat = null
+  this.state = 'stopped'
   this._task = null
   this.initialize.apply(this, arguments)
 }
@@ -190,7 +192,7 @@ _.extend(Transport.prototype, Backbone.Events, {
     // TODO: is there a smarter/cheaper way to do this?
     if (this._task) {
       jam.scheduler.resetTask(this._task)
-      this.nextEvent = null
+      this._nextEvent = null
       jam.scheduler.runTask(this._task)
     }
 
@@ -209,37 +211,38 @@ _.extend(Transport.prototype, Backbone.Events, {
     // re-fill buffer of next events to play.
 
     // if our cached event position is out of date, binary search to re-find it.
-    if (this.nextEvent == null) {
-      this.nextEvent = _.sortedIndex(this.events, {dt: jam.scheduler.now() - this.playbackStartTime}, 'dt')
+    if (this._nextEvent == null) {
+      this._nextEvent = _.sortedIndex(this.events, {dt: this.curTime()}, 'dt')
     }
 
-    if (this.nextEvent >= this.events.length) {
+    if (this._nextEvent >= this.events.length) {
       if (this.loopBeat == 'end') {
         // advance the clock for the final beats of the loop
         this.playbackStartTime += this.duration
 
         // reset to the beginning and start generating events for the next beat
-        this.curTime = 0
-        this.nextEvent = 0
+        this._curTime = 0
+        this._nextEvent = 0
       } else {
+        this.stop()
         return
       }
     }
 
     // collect the next second's worth of events
     var scheduleEvents = []
-    while (this.nextEvent < this.events.length && (event = this.events[this.nextEvent]).dt < this.curTime + 2) {
+    while (this._nextEvent < this.events.length && (event = this.events[this._nextEvent]).dt < this._curTime + 2) {
       event.t = this.playbackStartTime + event.dt
       if (event.finalize) { event.finalize(event) }
       scheduleEvents.push(event)
-      this.nextEvent++
+      this._nextEvent++
     }
 
-    this.curTime += 1
+    this._curTime += 1
 
     // manually schedule next run (don't let our buffer run out)
     scheduleEvents.push({
-      t: this.playbackStartTime + this.curTime,
+      t: this.playbackStartTime + this._curTime,
       run: _.bind(function() {
         jam.scheduler.runTask(this._task)
       }, this)
@@ -248,31 +251,70 @@ _.extend(Transport.prototype, Backbone.Events, {
     return scheduleEvents
   },
 
+  curTime: function() {
+    // current playback time in seconds relative to beat 0
+    if (this.playbackStartTime) {
+      return Math.max(jam.scheduler.now() - this.playbackStartTime, 0)
+    } else {
+      return this._curTime
+    }
+  },
+
   _stop: function() {
     if (this._task) {
       jam.scheduler.stop(this._task)
+      this._task = null
+      this._curTime = this.curTime()
+      this.playbackStartTime = null
+      this.state = 'paused'
+      this.trigger('stop')
     }
   },
 
   play: function() {
-    this.regen()
-
-    // state during event
-    this.nextEvent = 0  // cached next event for playback generation
-    this.curTime = 0  // current playback time in seconds relative to beat 0
-    this.playbackStartTime = jam.scheduler.now() + Voice._scheduleFudge  // start time of playback
-
     this._stop()
+
+    this.playbackStartTime = jam.scheduler.now()
+    if (this._curTime) {
+      this._nextEvent = null
+      this.playbackStartTime -= this._curTime
+    } else {
+      this._nextEvent = 0  // cached next event for playback generation
+      this._curTime = 0  // next event time in seconds relative to beat 0
+      this.playbackStartTime += Voice._scheduleFudge  // Web Audio scheduling grace period; see Voice for more details
+    }
+
     this._task = jam.scheduler.start(_.bind(this.generator, this))
+    this.state = 'playing'
+    this.trigger('start')
+  },
+
+  pause: function() {
+    this._stop()
+  },
+
+  seek: function(seconds) {
+    var wasPlaying = !!this.playbackStartTime
+    this._stop()
+    this._curTime = seconds
+    if (wasPlaying) {
+      this.play()
+    }
+    this.trigger('seek')
   },
 
   stop: function() {
     this._stop()
+    this.seek(0)
+    this.state = 'stopped'
   },
 
-  loop: function() {
-    this.loopBeat = 'end'
-    this.play()
+  setLoop: function(beat) {
+    if (beat == true) {
+      beat = 'end'
+    }
+    this.loopBeat = beat
+    this.trigger('change', 'loop', beat)
   }
 })
 Transport.extend = Backbone.View.extend

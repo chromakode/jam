@@ -22,10 +22,34 @@
   background: linear-gradient(@side, @stops);
 }
 
+body {
+  margin: 0;
+}
+
+.simple-buttons {
+  button {
+    .gradient(top, ~"#f5f5f5, #ddd");
+    border: 1px solid #777;
+    border-radius: 2px;
+
+    &:active, &.toggled {
+      .gradient(top, ~"#bbb, #ddd");
+    }
+
+    &.running {
+      .gradient(top, ~"#dfd, #aca");
+    }
+
+    &.running:active {
+      .gradient(top, ~"#9b9, #cec");
+    }
+  }
+}
+
 #side {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: 20px;
   left: 510px;
   right: 0;
   z-index: 10;
@@ -144,6 +168,75 @@
   right: 0;
 }
 
+#progress {
+  @height: 20px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: @height;
+  border-top: 1px solid gray;
+
+  .simple-buttons;
+  button {
+    vertical-align: middle;
+    font-size: 20px;
+    padding: 2px 0;
+    line-height: 20px;
+  }
+
+  .controls {
+    position: absolute;
+    top: -36px;
+    padding: 2px;
+    background: lighten(@level-bg, 15%);
+    border: 1px solid gray;
+    border-left: none;
+    border-top-right-radius: 4px;
+  }
+
+  .bar-container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: @level-bg;
+
+    .bar {
+      position: absolute;
+      background: @level-fg;
+      height: 100%;
+      z-index: 1;
+    }
+  }
+
+  .current-time, .end-time {
+    position: absolute;
+    top: 0;
+    z-index: 2;
+    margin: 0 5px;
+    line-height: @height;
+    font-family: monospace;
+    font-weight: bold;
+    color: white;
+    text-shadow:
+      0px 0px rgba(0, 0, 0, .5),
+      1px 0px rgba(0, 0, 0, .5),
+      0px 1px rgba(0, 0, 0, .5),
+      1px 1px rgba(0, 0, 0, .5),
+      0 0 2px black;
+  }
+
+  .current-time {
+    left: 0;
+  }
+
+  .end-time {
+    right: 0;
+  }
+}
+
 #ace {
   position: absolute;
   top: 0;
@@ -164,19 +257,7 @@
   opacity: 0;
   .transition(opacity, .1s, linear);
 
-  button {
-    .gradient(top, ~"#f5f5f5, #ddd");
-    border: 1px solid #777;
-    border-radius: 2px;
-
-    &:active {
-      .gradient(top, ~"#bbb, #ddd");
-    }
-  
-    &.running {
-      .gradient(top, ~"#dfd, #aca");
-    }
-  }
+  .simple-buttons;
 
   .arrow {
     position: absolute;

@@ -323,7 +323,8 @@ TransportHUD = HUDView.define(/(jam.transport.set)/, {
       this.looping = null
       this.$('.loop').removeClass('icon-stop running').addClass('icon-loop')
     } else {
-      jam.transport.loop()
+      jam.transport.setLoop(true)
+      jam.transport.play()
       this.looping = true
       this.$('.loop').removeClass('icon-loop').addClass('icon-stop running')
     }
@@ -544,6 +545,112 @@ LevelsMeterView = Backbone.View.extend({
   }
 })
 
+ProgressView = Backbone.View.extend({
+  template: _.template('<div class="controls"><button class="play icon-play"></button><button class="stop icon-stop"></button><button class="loop icon-loop"></button></div><div class="bar-container"><div class="bar"></div><div class="current-time"></div><div class="end-time"></div></div>'),
+
+  events: {
+    'click .play': 'play',
+    'click .stop': 'stop',
+    'click .loop': 'loop'
+  },
+
+  initialize: function(options) {
+    this.transport = options.transport
+    this.listenTo(this.transport, 'regen seek change', this.update)
+    this.listenTo(this.transport, 'start', this._startUpdating)
+    this.listenTo(this.transport, 'stop', this._stopUpdating)
+    this.$el.html(this.template({}))
+    this.$play = this.$('.play')
+    this.$loop = this.$('.loop')
+    this.$currentTime = this.$('.current-time')
+    this.$endTime = this.$('.end-time')
+    this.$bar = this.$('.bar')
+
+    this._doSeek = _.debounce(this._doSeek, 100)
+    this.$('.bar-container')
+      .drag($.proxy(this, '_dragSeek'))
+      .drag('init', $.proxy(this, '_dragSeek'))
+  },
+
+  _formatTime: function(seconds) {
+    function zeropad(n, len) {
+      len = len || 2
+      s = n.toString()
+      var need = Math.max(0, len - s.length)
+      return new Array(need+1).join('0') + n
+    }
+    var hours = Math.floor(seconds / 60 / 60)
+    var minutes = Math.floor(seconds / 60)
+    return hours + ':' + zeropad(minutes) + ':' + zeropad(seconds.toFixed(3), 6)
+  },
+
+  _update: function(curTime) {
+    var curTime = curTime
+    var duration = this.transport.duration
+    this.$currentTime.text(this._formatTime(curTime))
+    this.$endTime.text(this._formatTime(duration))
+    this.$bar.width(Math.round(10000 * clamp(0, curTime / duration, 1)) / 100 + '%')
+
+    if (jam.transport.state == 'playing') {
+      this.$play.removeClass('icon-play').addClass('icon-pause running')
+    } else {
+      this.$play.removeClass('icon-pause running').addClass('icon-play')
+    }
+    this.$loop.toggleClass('toggled', !!jam.transport.loopBeat)
+  },
+
+  update: function() {
+   this._update(this.transport.curTime())
+  },
+
+  _startUpdating: function() {
+    this._stopUpdating()
+    this._interval = setInterval(_.bind(this.update, this), 1000/30)
+  },
+
+  _stopUpdating: function() {
+    if (this._interval) {
+      clearInterval(this._interval)
+    }
+    this.update()
+  },
+
+  play: function() {
+    if (jam.transport.state == 'playing') {
+      jam.transport.pause()
+    } else {
+      jam.transport.play()
+    }
+  },
+
+  stop: function() {
+    jam.transport.stop()
+  },
+
+  loop: function() {
+    if (this.$loop.is('.toggled')) {
+      jam.transport.setLoop(false)
+    } else {
+      jam.transport.setLoop(true)
+    }
+  },
+
+  _dragSeek: function(ev, dd) {
+    this._stopUpdating()
+    var frac = clamp(0, (dd.startX + dd.deltaX) / this.$el.width(), 1)
+    var newTime = jam.transport.duration * frac
+    this._update(newTime)
+    this._doSeek(newTime)
+  },
+
+  _doSeek: function(time) {
+    jam.transport.seek(time)
+    if (jam.transport.state == 'playing') {
+      this._startUpdating()
+    }
+  }
+})
+
 $(function() {
   // TODO: move to some kind of init
   jam.transport = new Transport()
@@ -556,6 +663,12 @@ $(function() {
   volumeView.render()
 
   levelsView = new LevelsMeterView({el: $('#meter')})
+
+  progressView = new ProgressView({
+    el: $('#progress'),
+    transport: jam.transport
+  })
+  progressView.render()
 
   $(window)
     .bind('dragenter dragover drop', function(ev) {
