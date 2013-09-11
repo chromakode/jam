@@ -546,7 +546,7 @@ LevelsMeterView = Backbone.View.extend({
 })
 
 ProgressView = Backbone.View.extend({
-  template: _.template('<div class="controls"><button class="play icon-play"></button><button class="stop icon-stop"></button><button class="loop icon-loop"></button></div><div class="bar-container"><div class="bar"></div><div class="current-time"></div><div class="end-time"></div></div>'),
+  template: _.template('<div class="panel"><div class="playback-controls"><button class="play icon-play"></button><button class="stop icon-stop"></button><button class="loop icon-loop"></button></div><div class="status-controls"><div class="jam-meter"></div></div></div><div class="bar-container"><div class="bar"></div><div class="current-time"></div><div class="end-time"></div></div>'),
 
   events: {
     'click .play': 'play',
@@ -570,6 +570,8 @@ ProgressView = Backbone.View.extend({
     this.$('.bar-container')
       .drag($.proxy(this, '_dragSeek'))
       .drag('init', $.proxy(this, '_dragSeek'))
+
+    this.meter = new LevelsMeterView({el: this.$('.jam-meter')})
   },
 
   _formatTime: function(seconds) {
@@ -659,10 +661,8 @@ $(function() {
   editorView.render()
   editorView.loadCode('demo.js')
 
-  volumeView = new VolumeView({el: $('#volume')})
+  volumeView = new VolumeView({el: $('header .jam-volume')})
   volumeView.render()
-
-  levelsView = new LevelsMeterView({el: $('#meter')})
 
   progressView = new ProgressView({
     el: $('#progress'),

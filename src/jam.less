@@ -46,6 +46,23 @@ body {
   }
 }
 
+header {
+  padding: 10px 15px;
+
+  h1 {
+    display: inline-block;
+    margin: 0;
+    margin-right: 15px;
+    font-family: sans-serif;
+    font-size: 25px;
+    color: #333;
+  }
+
+  .jam-volume {
+    opacity: .75;
+  }
+}
+
 #side {
   position: absolute;
   top: 0;
@@ -60,7 +77,7 @@ body {
 @mute-fg: red;
 @level-fg-mute: gray;
 
-#volume {
+.jam-volume {
   &, .icon, .level {
     display: inline-block;
   }
@@ -120,18 +137,21 @@ body {
   }
 }
 
-#meter {
+.jam-meter {
   display: inline-block;
   width: 200px;
-  margin-left: 20px;
 
   .container {
     position: relative;
     background: @level-bg;
     height: 10px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
     border-right: 3px solid transparent;
     .transition(border-right-color, 0.5s);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
 
     &.clip {
       border-right-color: red;
@@ -156,18 +176,14 @@ body {
   }
 }
 
-#volume, #meter {
-  opacity: .75;
-}
-
 #progress {
   @height: 20px;
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 1px;
   height: @height;
-  border-top: 1px solid gray;
+  z-index: 20;
 
   .simple-buttons;
   button {
@@ -177,14 +193,34 @@ body {
     line-height: 20px;
   }
 
-  .controls {
+  .panel {
     position: absolute;
     top: -36px;
-    padding: 2px;
-    background: lighten(@level-bg, 15%);
-    border: 1px solid gray;
-    border-left: none;
-    border-top-right-radius: 4px;
+    height: 36px;
+    z-index: 1;
+
+    .playback-controls {
+      display: inline-block;
+      padding: 2px;
+      vertical-align: bottom;
+      background: lighten(@level-bg, 15%);
+      border: 1px solid gray;
+      border-left: none;
+      border-bottom: none;
+      border-top-right-radius: 4px;
+    }
+
+    .status-controls {
+      display: inline-block;
+      height: 36px;
+      line-height: 34px;
+
+      .jam-meter {
+        width: 200px;
+        margin: 0 10px;
+        vertical-align: middle;
+      }
+    }
   }
 
   .bar-container {
@@ -193,8 +229,11 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
+    height: @height;
     background: @level-bg;
+    border-top: 1px solid gray;
     cursor: pointer;
+    z-index: 2;
 
     .bar {
       position: absolute;
@@ -232,7 +271,7 @@ body {
 
 #editor {
   position: absolute;
-  top: 50px;
+  top: 0;
   bottom: 0;
   left: 0;
   right: 0;
@@ -245,6 +284,8 @@ body {
   left: 0;
   right: 0;
   border: 1px solid gray;
+  border-top: none;
+  border-bottom: none;
 }
 
 .hud {
