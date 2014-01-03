@@ -77,6 +77,20 @@ _.extend(Pattern.prototype, {
 })
 Pattern.extend = Backbone.View.extend
 
+function SeekEvent(seekTime) {
+  this.seekTime = seekTime
+}
+_.extend(SeekEvent.prototype, {
+  finalize: function(event) {
+    event.transport._genBaseTime = event.t - this.seekTime
+    event.transport._nextIdx = null
+    console.log('seek', jam.scheduler.now(), event.t)
+  },
+
+  run: function(event) {
+    event.transport._displayBaseTime = event.t - this.seekTime
+  }
+})
 
 // takes patterns, tempo, schedule, etc and turns them into a timeline of real node manipulating events
 // someday will have seek / pause / rewind
@@ -89,8 +103,9 @@ Transport = function(options) {
   this.options = _.defaults(options || {}, this.options)
   this.out = ctx.createGainNode()
   connect(this.out, jam.out)
-  this._curTime = 0
-  this.loopBeat = null
+  this._pauseTime = 0
+  this._loopEvent = null
+  this.looping = false
   this.state = 'stopped'
   this._task = null
   this.initialize.apply(this, arguments)
@@ -188,13 +203,16 @@ _.extend(Transport.prototype, Backbone.Events, {
     this.endBeat = lastEvent.beat + lastEvent.duration
     this.duration = lastEvent.dt + this.t(lastEvent.duration, genTempo)
 
-    // if we're currently playing, invalidate our cached next event and re-scan
-    // TODO: is there a smarter/cheaper way to do this?
-    if (this._task) {
-      jam.scheduler.resetTask(this._task)
-      this._nextEvent = null
-      jam.scheduler.runTask(this._task)
+    // persist loop event
+    if (this._loopEvent) {
+      this._loopEvent.dt = this.duration
+      events.push(this._loopEvent)
     }
+
+    // re-run the generator with the new events
+    // TODO: generate tempo map and use to determine beat so that tempo edits
+    // retain seek position
+    this.seek(Math.min(this.playbackTime(), this.duration))
 
     console.timeEnd('transport regen')
     this.trigger('regen')
@@ -206,57 +224,71 @@ _.extend(Transport.prototype, Backbone.Events, {
     return beats * beatLen
   },
 
+  genAhead: .25,
   generator: function() {
     // event scheduler "generator" -- called in real time by scheduler to
     // re-fill buffer of next events to play.
 
-    // if our cached event position is out of date, binary search to re-find it.
-    if (this._nextEvent == null) {
-      this._nextEvent = _.sortedIndex(this.events, {dt: this.curTime()}, 'dt')
-    }
+    var now = jam.scheduler.now()
 
-    if (this._nextEvent >= this.events.length) {
-      if (this.loopBeat == 'end') {
-        // advance the clock for the final beats of the loop
-        this.playbackStartTime += this.duration
-
-        // reset to the beginning and start generating events for the next beat
-        this._curTime = 0
-        this._nextEvent = 0
-      } else {
-        this.stop()
-        return
-      }
-    }
-
-    // collect the next second's worth of events
+    // collect the next batch of events
+    var event
     var scheduleEvents = []
-    while (this._nextEvent < this.events.length && (event = this.events[this._nextEvent]).dt < this._curTime + 2) {
-      event.t = this.playbackStartTime + event.dt
+    var stop = false
+    while (true) {
+      if (this._nextIdx == null) {
+        var genTime = jam.scheduler.now() - this._genBaseTime
+        this._nextIdx = _.sortedIndex(this.events, {dt: genTime}, 'dt')
+      }
+
+      // check for end of transport
+      if (this._nextIdx >= this.events.length) {
+        stop = true
+        break
+      }
+
+      // FIXME: we need to clone for the corner case in which events are
+      // touched multiple times in this loop. this only happens for really
+      // short loops.
+      event = _.clone(this.events[this._nextIdx])
+      event.t = this._genBaseTime + event.dt
+
+      // stop generating if we've passed our lookahead point
+      if (event.t > now + this.genAhead * 2) {
+        break
+      }
+
+      this._nextIdx++
       if (event.finalize) { event.finalize(event) }
       scheduleEvents.push(event)
-      this._nextEvent++
     }
 
-    this._curTime += 1
-
-    // manually schedule next run (don't let our buffer run out)
-    scheduleEvents.push({
-      t: this.playbackStartTime + this._curTime,
-      run: _.bind(function() {
-        jam.scheduler.runTask(this._task)
-      }, this)
-    })
+    if (stop) {
+      // schedule a stop at the appropriate real time and stop generating.
+      scheduleEvents.push({
+        t: this._genBaseTime + this.duration,
+        run: _.bind(function() {
+          this.stop()
+        }, this)
+      })
+    } else {
+      // schedule next run (don't let our buffer run out)
+      scheduleEvents.push({
+        t: now + this.genAhead,
+        run: _.bind(function() {
+          jam.scheduler.runTask(this._task)
+        }, this)
+      })
+    }
 
     return scheduleEvents
   },
 
-  curTime: function() {
-    // current playback time in seconds relative to beat 0
-    if (this.playbackStartTime) {
-      return Math.max(jam.scheduler.now() - this.playbackStartTime, 0)
+  playbackTime: function() {
+    if (this.state == 'playing') {
+      return jam.scheduler.now() - this._displayBaseTime
     } else {
-      return this._curTime
+      return this._pauseTime
     }
   },
 
@@ -264,8 +296,8 @@ _.extend(Transport.prototype, Backbone.Events, {
     if (this._task) {
       jam.scheduler.stop(this._task)
       this._task = null
-      this._curTime = this.curTime()
-      this.playbackStartTime = null
+      this._pauseTime = this.playbackTime()
+      this._genBaseTime = this._displayBaseTime = null
       this.state = 'paused'
       this.trigger('stop')
     }
@@ -274,15 +306,11 @@ _.extend(Transport.prototype, Backbone.Events, {
   play: function() {
     this._stop()
 
-    this.playbackStartTime = jam.scheduler.now()
-    if (this._curTime) {
-      this._nextEvent = null
-      this.playbackStartTime -= this._curTime
-    } else {
-      this._nextEvent = 0  // cached next event for playback generation
-      this._curTime = 0  // next event time in seconds relative to beat 0
-      this.playbackStartTime += Voice._scheduleFudge  // Web Audio scheduling grace period; see Voice for more details
-    }
+    this._genBaseTime = this._displayBaseTime = jam.scheduler.now() - this._pauseTime
+    this._nextIdx = null
+
+    // Web Audio scheduling grace period; see Voice for more details
+    this._genBaseTime += Voice._scheduleFudge
 
     this._task = jam.scheduler.start(_.bind(this.generator, this))
     this.state = 'playing'
@@ -294,9 +322,9 @@ _.extend(Transport.prototype, Backbone.Events, {
   },
 
   seek: function(seconds) {
-    var wasPlaying = !!this.playbackStartTime
+    var wasPlaying = this.state == 'playing'
     this._stop()
-    this._curTime = seconds
+    this._pauseTime = seconds
     if (wasPlaying) {
       this.play()
     }
@@ -309,12 +337,18 @@ _.extend(Transport.prototype, Backbone.Events, {
     this.state = 'stopped'
   },
 
-  setLoop: function(beat) {
-    if (beat == true) {
-      beat = 'end'
+  setLoop: function(looping) {
+    this.looping = looping
+    if (looping) {
+      this._loopEvent = new SeekEvent(0)
+      this._loopEvent.dt = this.duration
+      this._loopEvent.transport = this
+      this.events.push(this._loopEvent)
+    } else {
+      this.events.splice(_.indexOf(this.events, this._loopEvent), 1)
+      this._loopEvent = null
     }
-    this.loopBeat = beat
-    this.trigger('change', 'loop', beat)
+    this.trigger('change', 'loop', this.looping)
   }
 })
 Transport.extend = Backbone.View.extend

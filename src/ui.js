@@ -598,11 +598,11 @@ ProgressView = Backbone.View.extend({
     } else {
       this.$play.removeClass('icon-pause running').addClass('icon-play')
     }
-    this.$loop.toggleClass('toggled', !!jam.transport.loopBeat)
+    this.$loop.toggleClass('toggled', !!jam.transport.looping)
   },
 
   update: function() {
-   this._update(this.transport.curTime())
+   this._update(this.transport.playbackTime())
   },
 
   _startUpdating: function() {
