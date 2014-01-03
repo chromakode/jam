@@ -11,6 +11,8 @@ function connect(/* [nodes] */) {
 }
 
 // TODO: web worker?
+// Idea: could increase scheduler accuracy by using a ScriptProcessorNode if
+// exact accuracy is needed
 Scheduler = function() {
   this.initialize.apply(this, arguments)
 }
