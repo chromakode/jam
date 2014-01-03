@@ -84,7 +84,6 @@ _.extend(SeekEvent.prototype, {
   finalize: function(event) {
     event.transport._genBaseTime = event.t - this.seekTime
     event.transport._nextIdx = null
-    console.log('seek', jam.scheduler.now(), event.t)
   },
 
   run: function(event) {
