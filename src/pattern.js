@@ -236,6 +236,9 @@ _.extend(Transport.prototype, Backbone.Events, {
     var scheduleEvents = []
     var stop = false
     while (true) {
+      // if we don't have a _nextIdx (from previous generator iterations), we
+      // need to determine the next event to feed by finding the next event
+      // after our current generation time. binary search to the rescue!
       if (this._nextIdx == null) {
         var genTime = jam.scheduler.now() - this._genBaseTime
         this._nextIdx = _.sortedIndex(this.events, {dt: genTime}, 'dt')
