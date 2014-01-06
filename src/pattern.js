@@ -72,6 +72,7 @@ _.extend(Pattern.prototype, {
     }
     var v = new window[event.vars.voice](event.vars)
     connect(v.out, event.transport.out)
+    // todo: use current tempo for duration
     v.play(event.t, event.transport.t(event.duration))
   }
 })
