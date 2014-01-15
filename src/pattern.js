@@ -101,8 +101,6 @@ _.extend(SeekEvent.prototype, {
 // + continuous patterns
 Transport = function(options) {
   this.options = _.defaults(options || {}, this.options)
-  this.out = ctx.createGainNode()
-  connect(this.out, jam.out)
   this._pauseTime = 0
   this._loopEvent = null
   this.looping = false
@@ -297,6 +295,10 @@ _.extend(Transport.prototype, Backbone.Events, {
 
   _stop: function() {
     if (this._task) {
+      if (this.out) {
+        this.out.disconnect(0)
+        this.out = null
+      }
       jam.scheduler.stop(this._task)
       this._task = null
       this._pauseTime = this.playbackTime()
@@ -314,6 +316,9 @@ _.extend(Transport.prototype, Backbone.Events, {
 
     // Web Audio scheduling grace period; see Voice for more details
     this._genBaseTime += Voice._scheduleFudge
+
+    this.out = ctx.createGainNode()
+    connect(this.out, jam.out)
 
     this._task = jam.scheduler.start(_.bind(this.generator, this))
     this.state = 'playing'
