@@ -138,7 +138,8 @@ _.extend(Transport.prototype, Backbone.Events, {
       if (seq.tempo) {
         events.push({
           beat: seq.start,
-          tempo: seq.tempo
+          tempo: seq.tempo,
+          duration: 0
         })
       }
 
