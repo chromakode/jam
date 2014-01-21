@@ -19,9 +19,15 @@ WaveformView = Backbone.View.extend({
       var columns = channels[c] = [],
           chan = buf.getChannelData(c)
       for (var i = 0; i < width; i++) {
-          var vals = Array.prototype.slice.call(chan, i * columnWidth, (i + 1) * columnWidth)
-          columns[i] = [_.max(vals), _.min(vals)]
-          maxAmp = Math.max(_.max(columns[i], Math.abs), maxAmp)
+          var localMin = Number.MAX_VALUE
+          var localMax = Number.MIN_VALUE
+          // TODO: calculate appropriate step based on average expected error and height to draw
+          for (var j = Math.floor(i * columnWidth); j < Math.floor((i + 1) * columnWidth); j+=100) {
+            var localMin = Math.min(localMin, chan[j])
+            var localMax = Math.max(localMax, chan[j])
+            maxAmp = Math.max(maxAmp, Math.abs(localMin), Math.abs(localMax))
+          }
+          columns[i] = [localMax, localMin]
       }
     }
 
