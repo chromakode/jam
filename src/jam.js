@@ -181,6 +181,7 @@ _.extend(Samples.prototype, {
   fromArrayBuffer: function(name, ab) {
     ctx.decodeAudioData(ab, _.bind(function(buf) {
       console.log('loaded file', name)
+      this.index[name].resolve(buf)
       this.index[name] = buf
     }, this))
   },
@@ -191,6 +192,7 @@ _.extend(Samples.prototype, {
       return name
     }
 
+    this.index[name] = new $.Deferred
     var xhr = new XMLHttpRequest()
     xhr.open('GET', url, true)
     xhr.responseType = 'arraybuffer'
@@ -198,7 +200,7 @@ _.extend(Samples.prototype, {
       this.fromArrayBuffer(name, xhr.response)
     }, this)
     xhr.send()
-    return name
+    return this.index[name]
   }
 })
 

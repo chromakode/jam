@@ -234,10 +234,11 @@ SampleVoiceHUD = VoiceHUD.define(SampleVoice, {
     VoiceHUD.prototype.render.apply(this)
     this.sampleView = new SampleView()
     this.$el.append(this.sampleView.render().el)
-    setTimeout(_.bind(function() {
-      name = window[this.options.name].prototype.options.sample
-      this.sampleView.setBuffer(jam.samples.index[name])
-    }, this), 100)
+    var name = window[this.options.name].prototype.options.sample
+    // todo: loading indicator
+    $.when(jam.samples.index[name]).done(_.bind(function(buf) {
+      this.sampleView.setBuffer(buf)
+    }, this))
     return this
   }
 })
