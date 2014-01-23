@@ -111,6 +111,7 @@ _.extend(Transport.prototype, Backbone.Events, {
     _.extend(this.options, options)
     this.regen()
     this.trigger('set', options)
+    return this
   },
 
   regen: function() {

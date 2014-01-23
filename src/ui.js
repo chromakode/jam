@@ -420,7 +420,7 @@ EditorView = Backbone.View.extend({
             return
           }
 
-          return obj.prototype instanceof cls.match
+          return obj.prototype instanceof cls.match || obj instanceof cls.match
         }
       }, this)
       if (!hudCls) {
@@ -430,7 +430,10 @@ EditorView = Backbone.View.extend({
       var name = match[1]
       var hud = this.huds[name]
       if (!(hud && hud instanceof hudCls)) {
-        hud = this.huds[name] = new hudCls({name:name})
+        hud = this.huds[name] = new hudCls({
+          name: name,
+          subject: window[name]
+        })
         this.$el.append(hud.el)
         hud.render()
       }
@@ -452,6 +455,7 @@ EditorView = Backbone.View.extend({
           x: -7,
           y: lineTop + lineHeight / 2
         })
+        hud.options.range = range
         hud.show()
       } else {
         hud.hide()
