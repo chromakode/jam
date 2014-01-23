@@ -62,12 +62,12 @@ WaveformView = Backbone.View.extend({
       canvas.fillRect(0, center, width, 1)
     }
 
-    this.el.width = this.$el.width()
-    this.el.height = this.$el.height()
-
     var canvas = this.el.getContext('2d'),
         width = this.$el.width(),
         height = this.$el.height()
+
+    this.el.width = width
+    this.el.height = height
 
     canvas.clearRect(0, 0, width, height)
     var cols = this._getColumns(this.options.buffer, width)
