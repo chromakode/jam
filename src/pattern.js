@@ -102,7 +102,8 @@ Transport = function(options) {
 _.extend(Transport.prototype, Backbone.Events, {
   options: {
     tempo: 120,
-    sequence: []
+    sequence: [],
+    pauseAttack: .05
   },
 
   initialize: function() {},
@@ -316,8 +317,13 @@ _.extend(Transport.prototype, Backbone.Events, {
   _stop: function() {
     if (this._task) {
       if (this.out) {
-        this.out.disconnect(0)
+        var out = this.out
         this.out = null
+        out.gain.setValueAtTime(1, jam.scheduler.now())
+        out.gain.linearRampToValueAtTime(0, jam.scheduler.now() + this.options.pauseAttack)
+        setTimeout(_.bind(function() {
+          out.disconnect(0)
+        }, this), 500)
       }
       jam.scheduler.stop(this._task)
       this._task = null
@@ -339,6 +345,8 @@ _.extend(Transport.prototype, Backbone.Events, {
 
     this.out = ctx.createGainNode()
     connect(this.out, jam.out)
+    this.out.gain.setValueAtTime(0, jam.scheduler.now())
+    this.out.gain.setValueAtTime(1, jam.scheduler.now() + this.options.pauseAttack)
 
     this._task = jam.scheduler.start(_.bind(this.generator, this))
     this.state = 'playing'
