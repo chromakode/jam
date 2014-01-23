@@ -311,7 +311,7 @@ _.extend(Transport.prototype, Backbone.Events, {
       this._pauseTime = this.playbackTime()
       this._genBaseTime = this._displayBaseTime = null
       this.state = 'paused'
-      this.trigger('stop')
+      this.trigger('halt')
     }
   },
 
