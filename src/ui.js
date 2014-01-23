@@ -432,7 +432,8 @@ EditorView = Backbone.View.extend({
       var hud = this.huds[name]
       if (!(hud && hud instanceof hudCls)) {
         hud = this.huds[name] = new hudCls({name:name})
-        this.$el.append(hud.render().el)
+        this.$el.append(hud.el)
+        hud.render()
       }
 
       var textLayer = this.ace.renderer.$textLayer
