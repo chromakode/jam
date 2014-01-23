@@ -35,7 +35,7 @@ _.extend(Voice, {
     var v = new (ref(event.vars.voice))(event.vars)
     connect(v.out, event.transport.out)
     // fixme tempo duration stuff
-    v.play(event.t + Voice._scheduleFudge, event.transport.t(event.duration), event.offset)
+    v.play(event.t + Voice._scheduleFudge, event.transport.t(event.duration), event.offset || 0)
   }
 })
 Voice.extend = Backbone.View.extend
