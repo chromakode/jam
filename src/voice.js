@@ -8,9 +8,9 @@ Voice = function(options) {
 _.extend(Voice.prototype, {
   options: {},
   initialize: function() {},
-  play: function(time, length) {
+  play: function(time, length, offset) {
     try {
-      this.start(time)
+      this.start(time, offset)
     } catch (e) {
       console.error('error starting voice', e)
     }
@@ -34,7 +34,8 @@ _.extend(Voice, {
   runEvent: function(event) {
     var v = new (ref(event.vars.voice))(event.vars)
     connect(v.out, event.transport.out)
-    v.play(event.t + Voice._scheduleFudge, event.transport.t(event.duration))
+    // fixme tempo duration stuff
+    v.play(event.t + Voice._scheduleFudge, event.transport.t(event.duration), event.offset)
   }
 })
 Voice.extend = Backbone.View.extend
@@ -46,11 +47,11 @@ SampleVoice = Voice.extend({
     connect(this.s, this.out)
   },
 
-  start: function(t) {
+  start: function(t, offset) {
     var sampleFreq = this.options.sampleFreq || 440,
         sampleStart = this.options.sampleStart || 0
     this.s.playbackRate.value = this.options.freq / sampleFreq
-    this.s.noteGrainOn(t, sampleStart, this.s.buffer.duration - sampleStart)
+    this.s.noteGrainOn(t, sampleStart + offset, this.s.buffer.duration - sampleStart)
   },
 
   stop: function(t) {

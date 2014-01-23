@@ -198,6 +198,7 @@ _.extend(Transport.prototype, Backbone.Events, {
     _.each(events, function(event) {
       var deltaBeat = event.beat - genBeat
       event.dt = genTime += this.t(deltaBeat, genTempo)  // B-)
+      event.endt = event.dt + this.t(event.duration, genTempo)
       if (event.tempo) {
         // TODO: perhaps make this an event.gen() function?
         genTempo = event.tempo
@@ -207,7 +208,7 @@ _.extend(Transport.prototype, Backbone.Events, {
 
     var lastEvent = _.last(events)
     this.endBeat = lastEvent.beat + lastEvent.duration
-    this.duration = lastEvent.dt + this.t(lastEvent.duration, genTempo)
+    this.duration = lastEvent.endt
 
     // persist loop event
     if (this._loopEvent) {
@@ -246,8 +247,21 @@ _.extend(Transport.prototype, Backbone.Events, {
       // need to determine the next event to feed by finding the next event
       // after our current generation time. binary search to the rescue!
       if (this._nextIdx == null) {
-        var genTime = jam.scheduler.now() - this._genBaseTime
+        var genTime = now - this._genBaseTime
         this._nextIdx = _.sortedIndex(this.events, {dt: genTime}, 'dt')
+
+        // start up any previous events that should have still been playing,
+        // with the proper offset
+        for (var i = this._nextIdx; i >= 0; i--) {
+          var prevEvent = this.events[i]
+          if (prevEvent.endt > genTime) {
+            prevEvent = _.clone(prevEvent)
+            prevEvent.t = now
+            prevEvent.offset = genTime - prevEvent.dt
+            if (prevEvent.finalize) { prevEvent.finalize(prevEvent) }
+            scheduleEvents.push(prevEvent)
+          }
+        }
       }
 
       // check for end of transport
@@ -259,17 +273,15 @@ _.extend(Transport.prototype, Backbone.Events, {
       // FIXME: we need to clone for the corner case in which events are
       // touched multiple times in this loop. this only happens for really
       // short loops.
-      event = _.clone(this.events[this._nextIdx])
+      event = _.clone(this.events[this._nextIdx++])
       event.t = this._genBaseTime + event.dt
+      if (event.finalize) { event.finalize(event) }
+      scheduleEvents.push(event)
 
       // stop generating if we've passed our lookahead point
       if (event.t > now + this.genAhead * 2) {
         break
       }
-
-      this._nextIdx++
-      if (event.finalize) { event.finalize(event) }
-      scheduleEvents.push(event)
     }
 
     if (stop) {
