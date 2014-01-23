@@ -275,7 +275,6 @@ PatternHUD = HUDView.define(Pattern, {
         {start: 0, pattern: this.options.name}
       ]
     })
-    connect(this.transport.out, jam.out)
     this.stopListening(jam.transport)
 
     // update our temp transport when the main one updates
