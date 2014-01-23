@@ -32,7 +32,7 @@ _.extend(Voice, {
   },
 
   runEvent: function(event) {
-    var v = new window[event.vars.voice](event.vars)
+    var v = new (ref(event.vars.voice))(event.vars)
     connect(v.out, event.transport.out)
     v.play(event.t + Voice._scheduleFudge, event.transport.t(event.duration))
   }

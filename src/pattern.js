@@ -135,7 +135,7 @@ _.extend(Transport.prototype, Backbone.Events, {
       }
 
       if (seq.pattern) {
-        var pattern = new window[seq.pattern](seq)
+        var pattern = new (ref(seq.pattern))(seq)
         var patternStart = seq.start
         var patternEvents = pattern.generator()
         var event
@@ -145,7 +145,7 @@ _.extend(Transport.prototype, Backbone.Events, {
           event.transport = this
           if (event.vars.voice) {
             try {
-              window[event.vars.voice].initEvent(event)
+              ref(event.vars.voice).initEvent(event)
             } catch (e) {}
           }
 

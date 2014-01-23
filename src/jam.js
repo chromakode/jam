@@ -10,6 +10,10 @@ function connect(/* [nodes] */) {
   return arguments[arguments.length - 1]
 }
 
+function ref(nameOrVal) {
+  return _.isString(nameOrVal) ? window[nameOrVal] : nameOrVal
+}
+
 // TODO: web worker?
 // Idea: could increase scheduler accuracy by using a ScriptProcessorNode if
 // exact accuracy is needed
