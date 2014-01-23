@@ -172,7 +172,22 @@ _.extend(Transport.prototype, Backbone.Events, {
       }
     }, this)
 
-    this.events = events = _.sortBy(events, 'beat')
+    events.sort(function(a, b) {
+      if (a.beat < b.beat) {
+        return -1
+      } else if (a.beat > b.beat) {
+        return 1
+      } else {
+        if (a.tempo) {
+          return -1
+        } else if (b.tempo) {
+          return 1
+        } else {
+          return 0
+        }
+      }
+    })
+    this.events = events
 
     // step 2: bake beats into seconds and figure out song duration
     // TODO: create index of beat -> time?
@@ -180,12 +195,12 @@ _.extend(Transport.prototype, Backbone.Events, {
     var genTime = 0
     var genTempo = 0
     _.each(events, function(event) {
+      var deltaBeat = event.beat - genBeat
+      event.dt = genTime += this.t(deltaBeat, genTempo)  // B-)
       if (event.tempo) {
         // TODO: perhaps make this an event.gen() function?
         genTempo = event.tempo
       }
-      var deltaBeat = event.beat - genBeat
-      event.dt = genTime += this.t(deltaBeat, genTempo)  // B-)
       genBeat = event.beat
     }, this)
 
